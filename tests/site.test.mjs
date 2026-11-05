@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import ExcelJS from 'exceljs';
+import {createDemo} from '../procurement/demo-domain.mjs';
+import {acceptQuote,projectRows,ledgerTotals,exportCsv,exportColumns,marketSignal} from '../procurement/site-domain.mjs';
+import {workbookBytes} from '../procurement/exports.mjs';
+const state=()=>({...createDemo('analysis_cv35'),project:'大阪工場'});
+test('採用した最安の実見積を送料・梱包費込みで保存し交渉目安を混ぜない',()=>{const s=state();s.offers[1].processing=2000;const [r]=acceptQuote([],s,'req1');assert.equal(r.total,542000);assert.equal(r.freight,6000);assert.equal(r.processing,2000);assert.equal(r.unit,445);assert.equal(r.copperBase,1260000)});
+test('同じ依頼の再採用は重複せず見積変更を明細へ反映',()=>{const s=state(),one=acceptQuote([],s,'req1');assert.equal(acceptQuote(one,s,'req1').length,1);s.offers[1].freight=3000;const updated=acceptQuote(one,s,'req1');assert.equal(updated.length,1);assert.equal(updated[0].total,537000);assert.equal(one[0].total,540000)});
+test('同じ現場の複数商材・追加依頼は蓄積し別現場と分離',()=>{let rows=acceptQuote([],state(),'req1');rows=acceptQuote(rows,{...createDemo('analysis_light'),project:'大阪工場'},'req1');rows=acceptQuote(rows,state(),'req2');rows=acceptQuote(rows,{...state(),project:'京都現場'},'req3');assert.equal(projectRows(rows,'大阪工場').length,3);assert.equal(ledgerTotals(projectRows(rows,'大阪工場')).total,2208000);assert.equal(projectRows(rows,'京都現場').length,1)});
+test('回答ゼロでは採用明細を作らない',()=>{const s=state();s.offers.forEach(o=>o.answered=false);assert.throws(()=>acceptQuote([],s,'req'))});
+test('CSVは18列のBOM付きで引用符・改行を保ち数式文字を無害化',()=>{const [row]=acceptQuote([],state(),'req');row.project='=HYPERLINK("x")\n現場';const csv=exportCsv([row]);assert.equal(exportColumns.length,18);assert.equal(csv.charCodeAt(0),0xfeff);assert.match(csv,/"'=HYPERLINK\(""x""\)\n現場"/);assert.match(csv,/,"540000",/)});
+test('XLSXを開き直して数量・送料・合計が数値セルであることを確認',async()=>{const rows=acceptQuote([],state(),'req'),wb=new ExcelJS.Workbook();await wb.xlsx.load(await workbookBytes(rows));const sheet=wb.getWorksheet('採用明細');assert.equal(sheet.rowCount,2);assert.equal(sheet.getCell('H2').value,1200);assert.equal(sheet.getCell('L2').value,6000);assert.equal(sheet.getCell('N2').value,540000);assert.equal(sheet.getCell('R2').value,'req:analysis_cv35')});
+test('銅動向は前月との差と見積適用基準を区別し見積を書き換えない',()=>{const s=state(),before=structuredClone(s),m=marketSignal({icon:'cable'},s.offers[1]);assert.equal(m.current-m.previous,-20000);assert.equal(m.applied,1260000);assert.equal(m.series.at(-1).value,m.current);assert.deepEqual(s,before);assert.match(m.source,/架空/)});
+test('照明の価格改定は発表日と適用日を分け現在の見積に反映しない',()=>{const s=createDemo('analysis_light'),before=structuredClone(s),m=marketSignal({icon:'lighting',list:30000,manufacturer:'サンプル照明'},s.offers[1]);assert.equal(m.current,30000);assert.equal(m.next,32400);assert.equal(m.effective,'2027-01-01');assert.notEqual(m.date,m.effective);assert.deepEqual(s,before)});

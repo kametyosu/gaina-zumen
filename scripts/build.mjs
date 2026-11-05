@@ -7,3 +7,5 @@ await cp('procurement','dist/procurement',{recursive:true});
 await cp('supplier','dist/supplier',{recursive:true});
 await cp('proposal','dist/proposal',{recursive:true});
 await build({entryPoints:['procurement/imports.mjs'],bundle:true,minify:true,format:'esm',outfile:'dist/procurement/imports.bundle.js',platform:'browser'});
+
+await build({entryPoints:['procurement/exports.mjs'],bundle:true,minify:true,format:'esm',outfile:'dist/procurement/exports.bundle.js',platform:'browser'});

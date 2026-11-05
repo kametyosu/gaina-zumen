@@ -1,0 +1,3 @@
+import ExcelJS from 'exceljs';
+import {exportColumns,exportValues} from './site-domain.mjs';
+export async function workbookBytes(rows){const wb=new ExcelJS.Workbook();wb.creator='GAINA demo';const sheet=wb.addWorksheet('採用明細');sheet.addRow(exportColumns);rows.forEach(r=>sheet.addRow(exportValues(r)));sheet.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};sheet.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF244E77'}};sheet.views=[{state:'frozen',ySplit:1}];sheet.autoFilter={from:'A1',to:'R1'};sheet.columns.forEach((c,i)=>c.width=[0,3,4,5,6,16,17].includes(i)?28:16);return wb.xlsx.writeBuffer();}
