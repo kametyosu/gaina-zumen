@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "start": "npm run build && python3 -m http.server 3000 --bind 0.0.0.0 --directory dist",
-    "check": "node --check app.js && node --check procurement/app.js && node --check supplier/app.js && node --check netlify/functions/procurement.mjs && node --check procurement/enterprise.mjs && node --check procurement/data.mjs",
+    "check": "node --check app.js && node --check procurement/app.js && node --check supplier/app.js && node --check netlify/functions/procurement.mjs && node --check procurement/enterprise.mjs && node --check procurement/data.mjs && node --check procurement/demo.mjs && node --check procurement/demo-domain.mjs",
     "build": "node scripts/build.mjs",
-    "test": "node tests/domain.test.mjs && node tests/api.test.mjs && node tests/collect.test.mjs",
+    "test": "node tests/domain.test.mjs && node tests/api.test.mjs && node tests/collect.test.mjs && node tests/demo.test.mjs",
     "dev": "npm run build && node scripts/local-preview.mjs"
   },
   "dependencies": {
