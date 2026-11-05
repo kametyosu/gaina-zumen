@@ -15,9 +15,9 @@ try{
  await page.emulateMedia({media:'print'});
  const layout=await page.locator('.sheet').evaluateAll(pages=>pages.map((page,index)=>({page:index+1,overflow:page.querySelector('.page-body').getBoundingClientRect().bottom>page.querySelector('.page-footer').getBoundingClientRect().top-7})));
  const overflow=layout.filter(p=>p.overflow);if(overflow.length)throw Error('Proposal page content overlaps footer: '+overflow.map(p=>p.page).join(','));
- if(layout.length!==9)throw Error('Expected 9 proposal pages');
+ if(layout.length!==12)throw Error('Expected 12 proposal pages');
  await page.pdf({path:'proposal/gaina-proposal.pdf',format:'A4',landscape:true,preferCSSPageSize:true,printBackground:true,tagged:true,outline:true});
  await page.emulateMedia({media:'screen'});
- for(const number of [1,4,6,8])await page.locator('#page'+number).screenshot({path:'/tmp/gaina-proposal-page'+number+'.png'});
- console.log('Generated proposal/gaina-proposal.pdf — 9 pages; no footer overlaps.');
+ for(const number of [1,5,7,10])await page.locator('#page'+number).screenshot({path:'/tmp/gaina-proposal-page'+number+'.png'});
+ console.log('Generated proposal/gaina-proposal.pdf — 12 pages; no footer overlaps.');
 }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve))}
