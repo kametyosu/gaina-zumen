@@ -1,1 +1,21 @@
-{"name":"gaina-zumen","version":"0.1.0","private":true,"scripts":{"start":"python3 -m http.server 3000 --bind 0.0.0.0","check":"node --check app.js && node --check procurement/app.js"}}
+{
+  "name": "gaina-zumen",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "npm run build && python3 -m http.server 3000 --bind 0.0.0.0 --directory dist",
+    "check": "node --check app.js && node --check procurement/app.js && node --check supplier/app.js && node --check netlify/functions/procurement.mjs && node --check procurement/enterprise.mjs && node --check procurement/data.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node tests/domain.test.mjs && node tests/api.test.mjs && node tests/collect.test.mjs",
+    "dev": "npm run build && node scripts/local-preview.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.7",
+    "cheerio": "^1.2.0",
+    "exceljs": "^4.4.0",
+    "papaparse": "^5.7.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
