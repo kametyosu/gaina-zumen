@@ -9,3 +9,6 @@ await cp('proposal','dist/proposal',{recursive:true});
 await build({entryPoints:['procurement/imports.mjs'],bundle:true,minify:true,format:'esm',outfile:'dist/procurement/imports.bundle.js',platform:'browser'});
 
 await build({entryPoints:['procurement/exports.mjs'],bundle:true,minify:true,format:'esm',outfile:'dist/procurement/exports.bundle.js',platform:'browser'});
+
+await build({entryPoints:['procurement/rfq-export.mjs'],bundle:true,minify:true,format:'esm',outfile:'dist/procurement/rfq-export.bundle.js',platform:'browser'});
+await cp('docs','dist/docs',{recursive:true});

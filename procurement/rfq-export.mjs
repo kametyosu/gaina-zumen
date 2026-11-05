@@ -1,0 +1,3 @@
+import ExcelJS from 'exceljs';
+export async function tableWorkbook(headers,rows){const w=new ExcelJS.Workbook(),s=w.addWorksheet('明細');w.creator='GAINA';s.addRow(headers);rows.forEach(r=>s.addRow(r));s.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};s.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1855AA'}};s.columns.forEach(c=>c.width=22);s.views=[{state:'frozen',ySplit:1}];return new Blob([await w.xlsx.writeBuffer()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});}
+export function csvText(heads,rows){const cell=v=>'"'+String(typeof v==='string'&&/^[=+\-@\t\r]/.test(v)?"'"+v:v??'').replaceAll('"','""')+'"';return '\uFEFF'+[heads,...rows].map(r=>r.map(cell).join(',')).join('\r\n');}
