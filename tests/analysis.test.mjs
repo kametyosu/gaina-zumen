@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {materials,customer,copper,analyzePurchases,analyzeEffects,effectRecords,comparisonScenario} from '../procurement/analysis-data.mjs';
+import {ranked,total,createDemo} from '../procurement/demo-domain.mjs';
+test('6か月の仕入構成と改善余地を同じ明細から算出',()=>{const a=analyzePurchases();assert.equal(a.spend,24000000);assert.equal(a.targetSpend,22800000);assert.equal(a.categories.find(c=>c.name==='電線').spend/a.spend,.6);assert.equal(a.categories.find(c=>c.name==='電線').potential,830000);assert.equal(a.potential,1310000);assert.equal(a.after,22690000)});
+test('請求照合済みを想定した例だけで削減と粗利を計算',()=>{const f=analyzeEffects();assert.equal(f.details.length,5);assert.equal(f.saving,179000);assert.equal(f.sales,3765000);assert.equal(f.beforeProfit,753000);assert.equal(f.afterProfit,932000);assert.equal(f.beforeMargin,20);assert.ok(Math.abs(f.afterMargin-24.754316)<1e-6);assert.equal(f.afterProfit-f.beforeProfit,f.saving)});
+test('見積段階の金額は確定効果へ加算しない',()=>{const extra={...effectRecords[0],id:'pending',stage:'quoted',qty:100000};assert.equal(analyzeEffects([...effectRecords,extra]).saving,179000)});
+test('8商材すべてで分析参考単価と送料込み相見積が一致',()=>{for(const m of materials){const s=comparisonScenario(m),offers=s.offers.map(o=>({...o,answered:true})),b=ranked(offers,s.qty)[0];assert.ok(b);assert.equal(total(b,s.qty)/s.qty,m.reference);const current=createDemo(m.key);assert.equal(current.qty,m.compareQty);assert.equal(current.offers.find(o=>o.id===b.id).unit,b.unit);assert.ok(m.low<=m.reference&&m.reference<=m.high)}});
+test('銅系列は円/tの架空データで、期首比5%と電線単価への仮定を区別',()=>{assert.equal(copper.unit,'円/t');assert.ok(Math.abs(copper.points.at(-1).value/copper.points[0].value-1-.05)<1e-9);assert.equal(customer.period,'2026年5月〜10月')});

@@ -1,8 +1,10 @@
+import {materials, comparisonScenario} from './analysis-data.mjs';
 export const scenarios={
  lighting:{name:'大阪工場 LED照明更新工事',product:'LEDベースライト 40形',model:'DEMO-L40',manufacturer:'サンプル照明',unitLabel:'台',qty:80,list:30000,sale:15000,previous:12000,icon:'lighting',copperShare:0.12,offers:[{id:'a',name:'A電材',unit:10500,freight:0,lead:3,stock:40,restock:12},{id:'b',name:'B電機',unit:10800,freight:12000,lead:7,stock:120,restock:10},{id:'c',name:'C商会',unit:11100,freight:0,lead:3,stock:80,restock:7}]},
  panel:{name:'事務所改修 分電盤更新工事',product:'標準分電盤 12回路',model:'DEMO-DB12',manufacturer:'サンプル電機',unitLabel:'面',qty:2,list:600000,sale:450000,previous:390000,icon:'panel',copperShare:0.2,offers:[{id:'a',name:'A電材',unit:336000,freight:0,lead:8,stock:1,restock:14},{id:'b',name:'B電機',unit:324000,freight:12000,lead:10,stock:0,restock:10},{id:'c',name:'C商会',unit:330000,freight:0,lead:5,stock:2,restock:12}]},
  cable:{name:'倉庫増設 電源配線工事',product:'電力ケーブル CV 3.5sq × 3C',model:'DEMO-CV35',manufacturer:'サンプル電線',unitLabel:'m',qty:500,list:2000,sale:1500,previous:1200,icon:'cable',copperShare:0.6,offers:[{id:'a',name:'A電材',unit:1040,freight:0,lead:3,stock:200,restock:14},{id:'b',name:'B電機',unit:1080,freight:12000,lead:7,stock:600,restock:10},{id:'c',name:'C商会',unit:1110,freight:0,lead:3,stock:500,restock:7}]}
 };
+for (const material of materials) scenarios[material.key] = comparisonScenario(material);
 export const total=(offer,qty)=>offer.unit*qty+offer.freight;
 export const fullLead=(offer,qty)=>offer.stock>=qty?offer.lead:Number.isFinite(offer.restock)?Math.max(offer.lead,offer.restock):Infinity;
 export function availability(offer,qty,neededDays=7){const days=fullLead(offer,qty);return{stock:offer.stock,shortage:Math.max(0,qty-offer.stock),days,ready:days<=neededDays,inStock:offer.stock>=qty}}

@@ -1,8 +1,9 @@
+import { customer, materials, copper, analyzePurchases, analyzeEffects } from './analysis-data.mjs';
 import { scenarios, total, eligible, ranked, summary, priceImpact, copperImpact, createDemo, availability, fullLead, purchaseHistory, rateBenchmark, validateDemo } from './demo-domain.mjs';
 const $ = id => document.getElementById(id);
 const money = n => '¥' + Math.round(n).toLocaleString('ja-JP');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const storageKey = 'gaina-simple-demo-v2';
+const storageKey = 'gaina-simple-demo-v3';
 let state = createDemo(), timer, documentKind = 'boq', documentName = '', extracted = [];
 try {
   const saved = JSON.parse(localStorage.getItem(storageKey));
@@ -16,8 +17,8 @@ const benchmark = () => rateBenchmark(purchaseHistory(state.key), scenario().man
 function persist() { try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch {} }
 function toast(message) { $('toast').textContent = message; $('toast').style.display = 'block'; clearTimeout(timer); timer = setTimeout(() => $('toast').style.display = 'none', 3500); }
 function setView(view) {
-  $('compareView').hidden = view !== 'compare'; $('reportView').hidden = view !== 'report';
-  $('pageLabel').textContent = view === 'compare' ? 'ワークスペース' : '利益改善レポート';
+  $('analysisView').hidden = view !== 'analysis'; $('compareView').hidden = view !== 'compare'; $('reportView').hidden = view !== 'report';
+  $('pageLabel').textContent = view === 'analysis' ? 'お客様の仕入分析' : view === 'compare' ? '相見積・改善' : '利益改善レポート';
   document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   $('stepCompare').classList.toggle('current', view === 'compare'); $('stepReport').classList.toggle('current', view === 'report');
   renderReport(); window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -29,7 +30,7 @@ function fixture() {
 }
 function render() {
   const s = scenario(), o = candidate(), m = summary(s, state.qty, o), answers = state.offers.filter(v => v.answered).length, hist = benchmark();
-  const items = state.batch.length ? state.batch : Object.keys(scenarios).map(key => ({ key }));
+  const items = state.batch.length ? state.batch : (state.fromAnalysis ? materials.map(m=>m.key) : ['lighting','panel','cable']).map(key => ({ key }));
   $('scenario').innerHTML = items.map(i => `<option value="${i.key}">${esc(scenarios[i.key].product)}</option>`).join('');
   $('scenario').value = state.key; $('scenarioLabel').textContent = state.batch.length ? `対象商材 ${state.batch.length}件` : 'サンプル商材';
   $('comparisonTitle').textContent = `同じ条件で、${state.offers.length}社を比較`;
@@ -63,8 +64,8 @@ function renderSuggestions() {
   const lowest = state.offers.filter(v => v.answered).sort((a, b) => total(a, state.qty) - total(b, state.qty))[0];
   const rate = o.unit / s.list * 100, gap = hist.count >= 3 ? hist.median - rate : null;
   const saving = summary(s, state.qty, b).saved;
-  const price = state.key === 'cable' ? copperImpact(o, state.qty, s.copperShare, .1) : priceImpact(o, state.qty, .08);
-  $('suggestions').innerHTML = `<article class="suggestion"><span class="label">01 / 在庫と納期で選ぶ</span><h3>${esc(b.name)}なら、必要日に全数そろう。</h3><p>${lowest.id !== b.id && !isEligible(lowest) ? `${esc(lowest.name)}は安いものの、全数まで${fullLead(lowest, state.qty)}日。` : ''}${esc(b.name)}は在庫${b.stock}${s.unitLabel}、全数${fullLead(b, state.qty)}日。${state.neededDays}日以内にそろう回答で最安です。</p><strong class="benefit">${saving >= 0 ? '−' : '＋'}${money(Math.abs(saving))}<small>以前の仕入条件と比較</small></strong><button id="chooseBest">おすすめの条件を選ぶ →</button></article><article class="suggestion"><span class="label">02 / 自社の掛け率を交渉材料に</span><h3>${gap === null ? '比較できる履歴を蓄積する。' : gap >= 0 ? '過去中央値より、掛け率が低い。' : '過去の掛け率に、交渉余地。'}</h3><p>${hist.count >= 3 ? `自社実績 ${hist.count}件の中央値は${hist.median.toFixed(1)}%。今回の${esc(o.name)}は${rate.toFixed(1)}%。同型番・近い数量の履歴で照合しています。` : `近い条件の実績は${hist.count}件。少数の実績から相場を断定せず、個別価格を確認します。`}</p><button id="rateHistory">履歴と集計条件を見る →</button></article><article class="suggestion"><span class="label">03 / 利益の目減りを防ぐ</span><h3>${state.key === 'cable' ? '銅ベースの変動に、先回り。' : '値上げ前に、有効期限を確認。'}</h3><p>${state.key === 'cable' ? '銅価格10%上昇の仮定で' : '定価8%上昇・掛け率据え置きの仮定で'}、原価が${money(price)}増えるシナリオです。</p><button id="impactOpen">原価への影響を見る →</button></article>`;
+  const price = scenario().icon === 'cable' ? copperImpact(o, state.qty, s.copperShare, .1) : priceImpact(o, state.qty, .08);
+  $('suggestions').innerHTML = `<article class="suggestion"><span class="label">01 / 在庫と納期で選ぶ</span><h3>${esc(b.name)}なら、必要日に全数そろう。</h3><p>${lowest.id !== b.id && !isEligible(lowest) ? `${esc(lowest.name)}は安いものの、全数まで${fullLead(lowest, state.qty)}日。` : ''}${esc(b.name)}は在庫${b.stock}${s.unitLabel}、全数${fullLead(b, state.qty)}日。${state.neededDays}日以内にそろう回答で最安です。</p><strong class="benefit">${saving >= 0 ? '−' : '＋'}${money(Math.abs(saving))}<small>以前の仕入条件と比較</small></strong><button id="chooseBest">おすすめの条件を選ぶ →</button></article><article class="suggestion"><span class="label">02 / 自社の掛け率を交渉材料に</span><h3>${gap === null ? '比較できる履歴を蓄積する。' : gap >= 0 ? '過去中央値より、掛け率が低い。' : '過去の掛け率に、交渉余地。'}</h3><p>${hist.count >= 3 ? `自社実績 ${hist.count}件の中央値は${hist.median.toFixed(1)}%。今回の${esc(o.name)}は${rate.toFixed(1)}%。同型番・近い数量の履歴で照合しています。` : `近い条件の実績は${hist.count}件。少数の実績から相場を断定せず、個別価格を確認します。`}</p><button id="rateHistory">履歴と集計条件を見る →</button></article><article class="suggestion"><span class="label">03 / 利益の目減りを防ぐ</span><h3>${scenario().icon === 'cable' ? '銅ベースの変動に、先回り。' : '値上げ前に、有効期限を確認。'}</h3><p>${scenario().icon === 'cable' ? '銅価格10%上昇の仮定で' : '定価8%上昇・掛け率据え置きの仮定で'}、原価が${money(price)}増えるシナリオです。</p><button id="impactOpen">原価への影響を見る →</button></article>`;
   $('chooseBest').onclick = () => { state.selected = b.id; state.adopted = null; render(); toast('在庫・全数納期を満たす条件を選択しました'); };
   $('rateHistory').onclick = history; $('impactOpen').onclick = impact;
 }
@@ -81,7 +82,7 @@ function history() {
 }
 function impact() {
   const s = scenario(), o = candidate(); if (!o) return;
-  const copper = state.key === 'cable', increase = copper ? copperImpact(o, state.qty, s.copperShare, .1) : priceImpact(o, state.qty, .08), m = summary(s, state.qty, o);
+  const copper = scenario().icon === 'cable', increase = copper ? copperImpact(o, state.qty, s.copperShare, .1) : priceImpact(o, state.qty, .08), m = summary(s, state.qty, o);
   openDetail('PRICE IMPACT / 仮定のシナリオ', `<h2>${copper ? '銅ベースが動いたら、利益はどうなる？' : '値上げ前に、利益への影響を知る。'}</h2><p>${copper ? '銅価格が10%上昇し、材料単価の60%が銅に連動する仮定です。実メーカーのスライド式ではありません。' : '定価8%上昇・掛け率据え置きの仮定です。実メーカーの発表ではありません。'}</p><div class="detail-metrics"><div><label>想定される原価増</label><strong>＋${money(increase)}</strong></div><div><label>材料粗利率への影響</label><strong>${m.margin.toFixed(1)}% → ${((m.sales - m.after - increase) / m.sales * 100).toFixed(1)}%</strong></div></div><h3>次に取るアクション</h3><div class="flow-list"><div><b>01</b><section><h3>在庫確保と見積の有効期限を確認</h3><p>必要数を確保できるか、提示価格がいつまで有効か代理店へ確認します。</p></section></div><div><b>02</b><section><h3>原価増分を、売価・仕様の見直しに使う</h3><p>${money(increase)}の差額を根拠に、代替品や売価を相談します。</p></section></div></div><div class="dialog-note">実際の価格取得や単価変更は行いません。</div>`);
 }
 function flow() {
@@ -100,9 +101,9 @@ function renderExtracted() {
 }
 function setDocument(kind, name = '') {
   documentKind = kind; documentName = name;
-  extracted = Object.keys(scenarios).map((key, index) => {
+  extracted = (state.fromAnalysis ? [state.key] : ['lighting','panel','cable']).map((key, index) => {
     const previous = state.batch.find(i => i.key === key);
-    return { key, qty: previous?.qty || (key === state.key ? state.qty : scenarios[key].qty), include: previous ? true : state.batch.length ? false : true, review: kind === 'drawing' && key === 'cable', confirmed: false, ref: kind === 'drawing' ? `設備図 E-0${index + 3} / ${['器具表', '盤リスト', '配線系統図'][index]}` : `金抜き明細 p.1 / No.0${index + 1}` };
+    return { key, qty: previous?.qty || (key === state.key ? state.qty : scenarios[key].qty), include: previous ? true : state.batch.length ? false : true, review: kind === 'drawing' && scenarios[key].icon === 'cable', confirmed: false, ref: kind === 'drawing' ? `設備図 ${{lighting:'E-03 / 器具表',panel:'E-04 / 盤リスト',cable:'E-05 / 配線系統図'}[scenarios[key].icon]}` : `金抜き明細 p.1 / No.0${index + 1}` };
   });
   renderExtracted();
 }
@@ -136,7 +137,7 @@ $('extractedItems').onclick = event => {
 };
 const snapshot = () => structuredClone({ qty: state.qty, offers: state.offers, selected: state.selected, adopted: state.adopted, delivery: state.delivery, neededDays: state.neededDays });
 function switchItem(key) {
-  if (!state.batch.length) { state = createDemo(key); render(); return; }
+  if (!state.batch.length) { const fromAnalysis = state.fromAnalysis; state = createDemo(key); state.fromAnalysis = fromAnalysis; render(); return; }
   state.itemStates[state.key] = snapshot();
   const item = state.batch.find(i => i.key === key); if (!item) return;
   const next = state.itemStates[key] || createDemo(key);
@@ -180,9 +181,29 @@ $('comparison').onclick = event => { const button = event.target.closest('[data-
 $('scenario').onchange = event => switchItem(event.target.value);
 $('delivery').onchange = event => { state.delivery = event.target.value; if (!state.offers.some(o => o.id === state.selected && isEligible(o))) state.selected = null; state.adopted = null; render(); };
 $('newRequest').onclick = request; $('anotherRequest').onclick = request; $('stepRequest').onclick = request;
-$('stepCompare').onclick = () => setView('compare'); $('stepReport').onclick = () => setView('report'); $('backCompare').onclick = () => setView('compare');
+$('stepCompare').onclick = () => setView('compare'); $('stepReport').onclick = () => setView('report'); $('backCompare').onclick = () => setView('compare'); $('backAnalysis').onclick = () => setView('analysis');
 $('flowOpen').onclick = flow; $('historyOpen').onclick = history; $('supplierPreview').onclick = openSupplier;
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(b.dataset.view));
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => $(b.dataset.close).close());
-$('reset').onclick = () => { state = createDemo(); render(); setView('compare'); toast('デモを最初の状態に戻しました'); };
+$('reset').onclick = () => { state = createDemo(); render(); setView('analysis'); toast('デモを最初の状態に戻しました'); };
 render();
+renderAnalysis();
+setView('analysis');
+
+function renderAnalysis() {
+  const a = analyzePurchases(), effects = analyzeEffects(), cables = materials.filter(m => m.category === '電線');
+  $('purchaseMetrics').innerHTML = `<article><span>過去6か月の仕入額</span><strong>${money(a.spend)}</strong><small>電線・照明・盤・その他 / 税抜</small></article><article><span>電線の仕入構成比</span><strong>60.0<em>%</em></strong><small>${money(a.categories.find(c => c.name === '電線').spend)} / 最優先の見直し対象</small></article><article><span>同数量での改善余地</span><strong>${money(a.potential)}</strong><small>参考条件で再購入した場合 / 未確定</small></article>`;
+  const colors = ['#3c83d2', '#68b5a2', '#97afd1', '#ced8e8'];
+  const mix = [...a.categories, { name: 'その他', spend: customer.otherSpend }];
+  $('spendMix').innerHTML = `<div class="mix-bar">${mix.map((c, i) => `<span style="width:${c.spend / a.spend * 100}%;background:${colors[i]}"></span>`).join('')}</div>` + mix.map((c, i) => `<div class="mix-row"><span><i style="background:${colors[i]}"></i>${c.name}</span><strong>${money(c.spend)}</strong><small>${(c.spend / a.spend * 100).toFixed(1)}%</small></div>`).join('');
+  const first = copper.points[0], last = copper.points.at(-1), values = copper.points.map(p => p.value), min = Math.min(...values) - 20000, max = Math.max(...values) + 20000;
+  const points = copper.points.map((p, i) => [35 + i * 76, 110 - (p.value - min) / (max - min) * 80]);
+  $('analysisCopper').innerHTML = `<div class="copper-head"><strong>${money(last.value)}<small> / t</small></strong><span>期首比 ＋${((last.value / first.value - 1) * 100).toFixed(1)}%</span></div><svg class="copper-analysis-chart" viewBox="0 0 450 145" role="img" aria-label="架空の国内銅建値の推移"><path d="M35 20V113H425" stroke="#e1e9f3" fill="none"/><polyline points="${points.map(p => p.join(',')).join(' ')}" fill="none" stroke="#4d8dce" stroke-width="3"/>${points.map(([x,y],i) => `<circle cx="${x}" cy="${y}" r="4" fill="#4d8dce"><title>${copper.points[i].date} ${money(copper.points[i].value)}/t</title></circle><text x="${x-8}" y="135">${i+5}月</text>`).join('')}</svg><p class="analysis-copper-note">銅が5%上がっても、電線全体が5%上がるとは限りません。銅比率60%の仮定なら単価への影響は約3%。加工費・メーカー固有のスライド式も確認します。</p>`;
+  $('cableAnalysis').innerHTML = '<thead><tr><th>電線の種類・サイズ</th><th>購入数量</th><th>現在の比較基準</th><th>参考レンジ</th><th>採用可能条件の参考単価</th><th>同数量の改善余地</th><th></th></tr></thead><tbody>' + cables.map(m => `<tr><td><strong>${m.name}</strong><small class="table-note">${m.model} / 架空商品</small></td><td>${m.qty.toLocaleString('ja-JP')}m</td><td>${money(m.current)}/m</td><td>${money(m.low)}〜${money(m.high)}/m</td><td>${money(m.reference)}/m</td><td class="saving-cell">${money((m.current-m.reference)*m.qty)}</td><td><button data-analyze-material="${m.key}">相見積へ →</button></td></tr>`).join('') + '</tbody>';
+  $('otherMaterials').innerHTML = materials.filter(m => m.category !== '電線').map(m => `<div class="other-material"><div><strong>${m.name}</strong><p>仕入 ${money(m.qty*m.current)} / ${m.qty}${m.unit}<br>現条件 ${money(m.current)} → 参考条件 ${money(m.reference)} / ${m.unit}</p><span>改善余地 ${money((m.current-m.reference)*m.qty)}</span></div><button data-analyze-material="${m.key}">比較する →</button></div>`).join('');
+  $('verifiedEffects').innerHTML = `<div class="effect-kpis"><div><span>確定削減額の例</span><strong>＋${money(effects.saving)}</strong><small>仮想の納品・請求照合後 / 5件</small></div><div><span>材料粗利額の変化</span><strong>${money(effects.beforeProfit)} → ${money(effects.afterProfit)}</strong><small>対象の材料売上 ${money(effects.sales)} は同じ</small></div><div><span>材料粗利率の変化</span><strong>${effects.beforeMargin.toFixed(1)}% → ${effects.afterMargin.toFixed(1)}%</strong><small>＋${(effects.afterMargin-effects.beforeMargin).toFixed(2)}ポイント / 工賃・共通経費別</small></div></div><details class="effect-details"><summary>対象5件の金額と計算根拠を見る</summary><div class="analysis-table-scroll"><table><thead><tr><th>商材</th><th>実購入数量の例</th><th>基準仕入額</th><th>改善後仕入額</th><th>削減額の例</th></tr></thead><tbody>${effects.details.map(d=>`<tr><td>${d.name}</td><td>${d.qty}${d.unit}</td><td>${money(d.before)}</td><td>${money(d.after)}</td><td>${money(d.saving)}</td></tr>`).join('')}</tbody></table></div></details><p class="analysis-footnote">改善余地${money(a.potential)}とは対象数量・段階が異なります。両方を足しません。この集計例は固定データで、下の比較操作による変更を含みません。送料配賦込み・税抜。実際は同条件の基準と追加費用を確認します。</p>`;
+  document.querySelectorAll('[data-analyze-material]').forEach(button => button.onclick = () => openAnalysisComparison(button.dataset.analyzeMaterial));
+  $('analysisStart').onclick = () => openAnalysisComparison(materials[0].key);
+  $('analysisEffect').onclick = () => setView('report');
+}
+function openAnalysisComparison(key) { state = createDemo(key); state.fromAnalysis = true; render(); setView('compare'); toast('仕入分析と同じ商材・参考条件で、相見積を体験できます'); }
