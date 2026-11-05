@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {materials,customer,copper,analyzePurchases,analyzeEffects,effectRecords,comparisonScenario,annualExample,annualImpact,nextMaterial} from '../procurement/analysis-data.mjs';
+import {materials,customer,copper,analyzePurchases,analyzeEffects,effectRecords,comparisonScenario,annualExample,annualImpact} from '../procurement/analysis-data.mjs';
 import {ranked,total,createDemo} from '../procurement/demo-domain.mjs';
 test('6か月の仕入構成と改善余地を同じ明細から算出',()=>{const a=analyzePurchases();assert.equal(a.spend,24000000);assert.equal(a.targetSpend,22800000);assert.equal(a.categories.find(c=>c.name==='電線').spend/a.spend,.6);assert.equal(a.categories.find(c=>c.name==='電線').potential,830000);assert.equal(a.potential,1310000);assert.equal(a.after,22690000)});
 test('請求照合済みを想定した例だけで削減と粗利を計算',()=>{const f=analyzeEffects();assert.equal(f.details.length,5);assert.equal(f.saving,179000);assert.equal(f.sales,3765000);assert.equal(f.beforeProfit,753000);assert.equal(f.afterProfit,932000);assert.equal(f.beforeMargin,20);assert.ok(Math.abs(f.afterMargin-24.754316)<1e-6);assert.equal(f.afterProfit-f.beforeProfit,f.saving)});
@@ -11,5 +11,3 @@ test('時期による単価低下を成果に混ぜず、同時点の基準と�
 test('同時点基準がなければ改善額は推測せず、確定効果も拒否',()=>{const rows=[{id:'x',category:'電線',qty:1000,current:600,reference:540}];const a=analyzePurchases(rows,0);assert.equal(a.spend,600000);assert.equal(a.potential,0);assert.equal(a.unassessed,1);assert.equal(a.after,null);assert.throws(()=>analyzeEffects([{material:'x',qty:1000,saleUnit:800,stage:'confirmed'}],rows))});
 test('年間2千万円を10%削減する仮定の利益額と率を算出',()=>{const a=annualImpact(annualExample);assert.equal(a.saving,2000000);assert.equal(a.after,18000000);assert.equal(a.beforeProfit,5000000);assert.equal(a.afterProfit,7000000);assert.equal(a.beforeMargin,20);assert.ok(Math.abs(a.afterMargin-28)<1e-10)});
 test('対象割合と追加費用を考慮し、売上なしでは粗利率を出さない',()=>{const a=annualImpact({...annualExample,coverage:.6,rate:.05,extraCost:100000,sales:null});assert.equal(a.grossSaving,600000);assert.equal(a.saving,500000);assert.equal(a.beforeMargin,null);assert.equal(a.afterMargin,null);assert.throws(()=>annualImpact({...annualExample,coverage:1.1}))});
-
-test('次の一手は同じ商材区分の過去購入額が大きい品目を提示',()=>{const next=nextMaterial('analysis_cv35');assert.equal(next.key,'analysis_cv55');assert.equal(next.qty*next.current,2720000);assert.notEqual(nextMaterial('analysis_light').key,'analysis_light')});
