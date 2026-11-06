@@ -28,3 +28,4 @@ await copyFile('node_modules/@tesseract.js-data/eng/4.0.0/eng.traineddata.gz','d
 
 await build({entryPoints:['wiring/reader.mjs'],bundle:true,minify:true,format:'esm',outfile:'dist/wiring/reader.bundle.js',platform:'browser'});
 await build({entryPoints:['wiring/generator-export.mjs'],bundle:true,minify:true,format:'esm',outfile:'dist/wiring/generator-export.bundle.js',platform:'browser'});
+await build({entryPoints:['wiring/template-export.mjs'],bundle:true,minify:true,format:'esm',outfile:'dist/wiring/template-export.bundle.js',platform:'browser'});
