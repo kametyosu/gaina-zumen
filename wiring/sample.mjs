@@ -1,0 +1,4 @@
+import {parseSheets} from './domain.mjs';
+// Fictional demonstration. No customer workbook cells or drawing images are embedded.
+export function sampleGroups(){const rows=[];for(let i=0;i<3;i++){const r=3+i*6;rows[r-1]=[];rows[r+1]=[];rows[r+3]=[];rows[r-1][0]=String(101+i);rows[r-1][6]='DEMO-SENSOR-'+String(i+1).padStart(2,'0');rows[r-1][11]='VCT-F 0.5Sq-6C\nE-11';rows[r-1][48]='DEMO-PANEL';const labels=['クロ','シロ','アカ','ミドリ','キ','チャ'],wires=['P-DEMO','N-DEMO','COM-D','IN-D'+(i+1),'COM-D','IN-D'+(i+1)],terms=['電源:1(+)','電源:2(-)','ALM1:1','ALM1:2','ALM2:3','ALM2:4'];for(let j=0;j<6;j++){const c=18+j*3;rows[r-1][c]=labels[j];rows[r+1][c]=wires[j];rows[r+3][c]=i===0?terms[j]:'';}}return parseSheets([{name:'DEMO',rows,merges:[]}]);}
+export const samplePages=[{number:1,drawing:'E-11',note:'架空の同型センサー3台。電源2芯＋接点4芯。',hasBodyLabels:true}];

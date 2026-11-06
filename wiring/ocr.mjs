@@ -1,0 +1,3 @@
+import {createWorker,OEM,PSM} from 'tesseract.js';
+let worker;
+export async function readCrop(canvas,onProgress){if(!worker)worker=await createWorker('eng',OEM.LSTM_ONLY,{workerPath:new URL('./ocr/worker.min.js',import.meta.url).href,corePath:new URL('./ocr/',import.meta.url).href,langPath:new URL('./ocr/',import.meta.url).href,workerBlobURL:false,gzip:true,logger:m=>onProgress?.(m.status,m.progress)});await worker.setParameters({tessedit_pageseg_mode:PSM.SPARSE_TEXT,preserve_interword_spaces:'1'});const {data}=await worker.recognize(canvas);return{text:data.text,confidence:data.confidence,tokens:[...new Set(data.text.match(/[A-Z][A-Z0-9.-]{0,20}|\b\d{1,4}\b/g)||[])]};}

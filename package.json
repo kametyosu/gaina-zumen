@@ -4,18 +4,23 @@
   "private": true,
   "scripts": {
     "start": "npm run build && python3 -m http.server 3000 --bind 0.0.0.0 --directory dist",
-    "check": "node --check app.js && node --check procurement/app.js && node --check supplier/app.js && node --check netlify/functions/procurement.mjs && node --check procurement/enterprise.mjs && node --check procurement/data.mjs && node --check procurement/demo.mjs && node --check procurement/demo-domain.mjs && node --check procurement/analysis-data.mjs && node --check scripts/render-proposal.mjs && node --check procurement/site-domain.mjs && node --check procurement/exports.mjs && node --check procurement/rfq-domain.mjs && node --check procurement/rfq-store.mjs && node --check procurement/rfq-app.mjs && node --check procurement/rfq-export.mjs",
+    "check": "node --check app.js && node --check procurement/app.js && node --check supplier/app.js && node --check netlify/functions/procurement.mjs && node --check procurement/enterprise.mjs && node --check procurement/data.mjs && node --check procurement/demo.mjs && node --check procurement/demo-domain.mjs && node --check procurement/analysis-data.mjs && node --check scripts/render-proposal.mjs && node --check procurement/site-domain.mjs && node --check procurement/exports.mjs && node --check procurement/rfq-domain.mjs && node --check procurement/rfq-store.mjs && node --check procurement/rfq-app.mjs && node --check procurement/rfq-export.mjs && node --check wiring/domain.mjs && node --check wiring/app.mjs && node --check wiring/io.mjs && node --check wiring/pdf.mjs && node --check wiring/ocr.mjs && node --check wiring/patch.mjs",
     "build": "node scripts/build.mjs",
-    "test": "node tests/domain.test.mjs && node tests/api.test.mjs && node tests/collect.test.mjs && node tests/demo.test.mjs && node tests/analysis.test.mjs && node tests/site.test.mjs && node tests/rfq.test.mjs",
+    "test": "node tests/domain.test.mjs && node tests/api.test.mjs && node tests/collect.test.mjs && node tests/demo.test.mjs && node tests/analysis.test.mjs && node tests/site.test.mjs && node tests/rfq.test.mjs && node tests/wiring.test.mjs",
     "dev": "npm run build && node scripts/local-preview.mjs",
     "proposal:pdf": "node scripts/export-proposal.mjs",
-    "test:rfq-browser": "npm run build && node scripts/test-rfq-browser.mjs"
+    "test:rfq-browser": "npm run build && node scripts/test-rfq-browser.mjs",
+    "test:wiring-browser": "npm run build && node scripts/test-wiring-browser.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^11.1.7",
+    "@tesseract.js-data/eng": "^1.0.0",
     "cheerio": "^1.2.0",
     "exceljs": "^4.4.0",
-    "papaparse": "^5.7.0"
+    "papaparse": "^5.7.0",
+    "pdfjs-dist": "^5.4.624",
+    "tesseract.js": "^6.0.1",
+    "jszip": "^3.10.2"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
