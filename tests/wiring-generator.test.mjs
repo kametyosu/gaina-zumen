@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';
+import ExcelJS from 'exceljs';
+import {createWorkbook} from '../wiring/generator-export.mjs';
+import {demoPdf} from '../wiring/demo-pdf.mjs';
+import {vectorGeometry} from '../wiring/geometry.mjs';
+import {getDocument} from 'pdfjs-dist/legacy/build/pdf.mjs';
+const pdf=await getDocument({data:demoPdf(),useSystemFonts:true}).promise,page=await pdf.getPage(1),g=vectorGeometry(await page.getOperatorList(),page.getViewport({scale:1}));assert.equal(g.devices.length,3);assert.equal(g.devices.reduce((n,d)=>n+d.ports.length,0),18);assert.equal(g.circles.length,36);await pdf.destroy();
+const core=n=>({order:n+1,color:n===0?'黒':'',wire:'WIRE-'+n,terminal:'TB:'+n,wireEvidence:{text:'RAW-'+n}});const bytes=await createWorkbook([{number:1,device:'DEVICE',mark:'MARK',cable:'CABLE',counterparty:'PANEL',page:3,drawing:'E-03',cores:Array.from({length:12},(_,n)=>core(n)),rect:{x:.2,y:.3,width:.1,height:.2},confirmed:false}],{fileName:'drawing.pdf',pages:[3]});const wb=new ExcelJS.Workbook();await wb.xlsx.load(bytes);const s=wb.getWorksheet('結線表');assert.equal(s.getCell('S3').value,'黒');assert.equal(s.getCell('S5').value,'WIRE-0');assert.equal(s.getCell('S7').value,'TB:0');assert.equal(s.getCell('AT5').value,'WIRE-9');assert.equal(s.getCell('S11').value,'WIRE-10');assert.equal(s.getCell('AW3').value,'PANEL');assert.equal(s.getCell('V3').fill.fgColor.argb,'FFFFF1C2');assert.match(s.headerFooter.oddHeader,/確認用/);assert.equal(wb.getWorksheet('読取根拠').rowCount,13);assert.equal(wb.getWorksheet('出力について').getCell('B2').value,'3');console.log('PDF geometry and horizontal XLSX tests passed (18 ports, >10-core wrap, blank highlights, provenance).');

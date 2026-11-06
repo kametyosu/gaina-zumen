@@ -24,4 +24,7 @@ await cp('node_modules/pdfjs-dist/standard_fonts','dist/wiring/pdf/standard_font
 await mkdir('dist/wiring/ocr',{recursive:true});
 await copyFile('node_modules/tesseract.js/dist/worker.min.js','dist/wiring/ocr/worker.min.js');
 for(const name of ['tesseract-core-lstm.wasm.js','tesseract-core-lstm.wasm','tesseract-core-simd-lstm.wasm.js','tesseract-core-simd-lstm.wasm'])await copyFile('node_modules/tesseract.js-core/'+name,'dist/wiring/ocr/'+name);
-await copyFile('node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz','dist/wiring/ocr/eng.traineddata.gz');
+await copyFile('node_modules/@tesseract.js-data/eng/4.0.0/eng.traineddata.gz','dist/wiring/ocr/eng.traineddata.gz');
+
+await build({entryPoints:['wiring/reader.mjs'],bundle:true,minify:true,format:'esm',outfile:'dist/wiring/reader.bundle.js',platform:'browser'});
+await build({entryPoints:['wiring/generator-export.mjs'],bundle:true,minify:true,format:'esm',outfile:'dist/wiring/generator-export.bundle.js',platform:'browser'});
